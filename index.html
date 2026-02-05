@@ -8,7 +8,7 @@
     <meta http-equiv="Expires" content="0">
     <title>연결 안내</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #333; font-family: sans-serif; color: white; }
+        body { margin: 0; padding: 0; background-color: #222; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; color: white; }
         
         #container {
             display: flex; flex-direction: column; 
@@ -16,82 +16,147 @@
             height: 100vh; text-align: center;
         }
 
-        /* 공통 스타일 */
+        /* 로딩 스피너 */
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid #3498db; border-radius: 50%;
+            width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 안내 문구 박스 */
+        .guide-box {
+            background-color: rgba(255,255,255,0.1);
+            padding: 30px 20px; border-radius: 15px; margin: 20px; width: 80%;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .icon { font-size: 40px; margin-bottom: 10px; display: block; }
+        
+        /* 버튼 스타일 */
         .btn {
             display: inline-block; margin-top: 20px; padding: 15px 30px;
-            border-radius: 30px; font-weight: bold; text-decoration: none; font-size: 18px;
+            border-radius: 30px; font-weight: bold; text-decoration: none; font-size: 16px;
+            transition: transform 0.1s;
         }
-        .chrome-btn { background-color: #4285F4; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .safari-guide { background-color: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin: 20px; }
+        .btn:active { transform: scale(0.95); }
+        .chrome-btn { background-color: #4285F4; color: white; }
         
-        /* 화면 제어 */
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
     <div id="container">
-        <h2 id="status-msg">페이지 확인 중...</h2>
-        
-        <div id="android-area" class="hidden">
-            <p>보안 접속을 위해<br>크롬 브라우저로 엽니다.</p>
-            <a id="chrome-link" href="#" class="btn chrome-btn">Chrome으로 열기</a>
+        <div id="loading">
+            <div class="spinner"></div>
+            <p>브라우저 확인 중...</p>
         </div>
 
-        <div id="ios-area" class="hidden">
-            <div class="safari-guide">
-                <p style="font-size: 30px; margin: 0;">👆</p>
-                <p>오른쪽 상단 <strong>[...]</strong> 또는 <strong>[공유]</strong> 버튼을 눌러<br>
-                <strong>'Safari로 열기'</strong>를 선택해주세요.</p>
+        <div id="android-warning" class="hidden">
+            <div class="guide-box">
+                <span class="icon">🤖</span>
+                <h3>Chrome으로 접속해주세요</h3>
+                <p>현재 브라우저에서는<br>정상적인 이용이 어렵습니다.<br>아래 버튼을 눌러주세요.</p>
+                <a id="chrome-link" href="#" class="btn chrome-btn">Chrome으로 열기</a>
+            </div>
+        </div>
+
+        <div id="ios-warning" class="hidden">
+            <span style="position:absolute; top:10px; right:20px; font-size:50px;">👆</span>
+            <div class="guide-box">
+                <span class="icon">🍎</span>
+                <h3>Safari로 접속해주세요</h3>
+                <p>현재 Chrome, 네이버 등<br>다른 브라우저로 접속되었습니다.</p>
+                <hr style="border:0.5px solid rgba(255,255,255,0.2); margin: 15px 0;">
+                <p style="font-size: 14px; line-height: 1.6;">
+                    오른쪽 상단의 <strong>[···]</strong> 또는 <strong>[공유]</strong> 버튼을 눌러<br>
+                    <strong>'Safari로 열기'</strong>를 선택해주세요.
+                </p>
             </div>
         </div>
     </div>
 
     <script>
-        // 버전 확인용 로그 (콘솔)
-        console.log("Ver 3.0 - UI Forced");
+        (function() {
+            const targetUrl = "xconnect-e36e7.web.app/";
+            const fullUrl = "https://" + targetUrl;
+            const ua = navigator.userAgent.toLowerCase();
 
-        const targetUrl = "xconnect-e36e7.web.app/";
-        const fullUrl = "https://" + targetUrl;
-        const userAgent = navigator.userAgent.toLowerCase();
-        
-        // 인앱 브라우저 체크 (카톡, 네이버, 인스타, 페북 등)
-        const isInApp = /kakaotalk|naver|instagram|facebook|line|band|daumapps/i.test(userAgent);
-        
-        const statusMsg = document.getElementById("status-msg");
-        const androidArea = document.getElementById("android-area");
-        const iosArea = document.getElementById("ios-area");
-        const chromeLink = document.getElementById("chrome-link");
+            // DOM 요소 가져오기
+            const loading = document.getElementById("loading");
+            const androidWarning = document.getElementById("android-warning");
+            const iosWarning = document.getElementById("ios-warning");
+            const chromeLink = document.getElementById("chrome-link");
 
-        // 안드로이드 크롬 실행 주소
-        const chromeIntent = `intent://${targetUrl}#Intent;scheme=https;package=com.android.chrome;end`;
+            // 안드로이드 크롬 강제 실행 주소
+            const chromeIntent = `intent://${targetUrl}#Intent;scheme=https;package=com.android.chrome;end`;
 
-        if (userAgent.includes("android")) {
-            if (isInApp) {
-                // 안드로이드 + 인앱: 무조건 멈추고 버튼 보여줌 (자동이동 X)
-                statusMsg.innerText = "외부 브라우저 연결이 필요합니다";
-                androidArea.classList.remove("hidden");
-                chromeLink.href = chromeIntent;
-            } else {
-                // 안드로이드 + 일반 브라우저: 자동 이동 시도
-                statusMsg.innerText = "연결 중...";
-                location.href = chromeIntent;
+            // 기기 및 브라우저 판별 (엄격 모드)
+            const isAndroid = ua.includes("android");
+            const isIOS = /iphone|ipad|ipod/.test(ua);
+
+            // [판별 로직]
+            // 안드로이드인데 '순정 크롬'이 아닌 것들 (네이버, 삼성브라우저, 카톡 등)
+            // 참고: 순정 크롬도 'Version/...' 같은 게 섞일 수 있어 제외 조건으로 필터링
+            // SamsungBrowser, Naver, Kakao, Line 등이 포함되면 "Chrome 아님"으로 간주
+            const isAndroidNonChrome = isAndroid && (
+                ua.includes("samsungbrowser") || 
+                ua.includes("naver") || 
+                ua.includes("kakaotalk") ||
+                ua.includes("daumapps") ||
+                ua.includes("line")
+            );
+
+            // iOS인데 '순정 사파리'가 아닌 것들
+            // CriOS(iOS용 크롬), FxiOS(파이어폭스), Naver, Kakao, etc.
+            // 사파리는 'safari'를 포함하지만 'crios' 등은 포함하지 않아야 함
+            const isIOSNonSafari = isIOS && (
+                ua.includes("crios") || // iOS 크롬
+                ua.includes("fxios") || // iOS 파이어폭스
+                ua.includes("naver") || 
+                ua.includes("kakaotalk") ||
+                ua.includes("daumapps") ||
+                ua.includes("line") ||
+                ua.includes("google")   // 구글 앱
+            );
+
+            // --- 실행 로직 ---
+
+            // 1. 안드로이드 처리
+            if (isAndroid) {
+                // 네이버, 삼성 등 다른 브라우저라면 -> 경고창 + 크롬실행버튼
+                if (isAndroidNonChrome) {
+                    loading.style.display = "none";
+                    androidWarning.classList.remove("hidden");
+                    chromeLink.href = chromeIntent;
+                } 
+                // 순정 크롬으로 보이면 -> 바로 이동
+                else {
+                    location.href = chromeIntent; 
+                    // 혹시 실패하면 일반 이동
+                    setTimeout(() => { location.href = fullUrl; }, 500);
+                }
             }
-        } 
-        else if (userAgent.includes("iphone") || userAgent.includes("ipad")) {
-            if (isInApp) {
-                // iOS + 인앱: 가이드 화면 보여줌
-                statusMsg.innerText = "브라우저 변경 안내";
-                iosArea.classList.remove("hidden");
-            } else {
-                // iOS + 사파리/크롬: 바로 이동
+
+            // 2. iOS 처리
+            else if (isIOS) {
+                // 크롬(CriOS)이나 인앱 브라우저라면 -> 사파리 유도 안내창 (이동 안 시킴!)
+                if (isIOSNonSafari) {
+                    loading.style.display = "none";
+                    iosWarning.classList.remove("hidden");
+                } 
+                // 순정 사파리라면 -> 바로 이동
+                else {
+                    location.href = fullUrl;
+                }
+            }
+
+            // 3. PC 등 기타
+            else {
                 location.href = fullUrl;
             }
-        } 
-        else {
-            // PC 등: 바로 이동
-            location.href = fullUrl;
-        }
+
+        })();
     </script>
 </body>
 </html>
