@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>페이지 이동 중...</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+        
+        /* 로딩 중 화면 */
+        #loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            text-align: center;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 인앱 브라우저 탈출 가이드 (기본적으로 숨김) */
+        #guide-overlay {
+            display: none; /* JS로 제어 */
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            z-index: 9999;
+            color: white;
+            text-align: center;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding-top: 50px;
+        }
+        .guide-arrow {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 50px;
+            animation: bounce 1s infinite;
+        }
+        .guide-text {
+            margin-top: 80px;
+            font-size: 18px;
+            line-height: 1.6;
+            padding: 0 20px;
+        }
+        .guide-icon {
+            display: inline-block;
+            background: #fff;
+            color: #333;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 0 4px;
+        }
+        .btn-manual {
+            margin-top: 30px;
+            padding: 12px 24px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>사이트로 연결 중입니다...</p>
+    </div>
+
+    <div id="guide-overlay">
+        <div class="guide-arrow">👆</div>
+        <div class="guide-text">
+            이 페이지는 외부 브라우저에서<br>정상 작동합니다.<br><br>
+            화면 우측 상단의 <span class="guide-icon">···</span> 또는 <span class="guide-icon">공유</span> 버튼을 눌러<br>
+            <strong>[Safari로 열기]</strong>를 선택해주세요.
+        </div>
+        <br>
+        <a href="https://xconnect-e36e7.web.app/" class="btn-manual" target="_blank">브라우저로 이동하기</a>
+    </div>
+
+    <script>
+        (function() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            const targetUrl = "xconnect-e36e7.web.app/";
+            const fullUrl = "https://" + targetUrl;
+
+            // 인앱 브라우저 확인용 키워드 (카톡, 네이버, 인스타, 페이스북, 라인 등)
+            const isInApp = /kakaotalk|naver|instagram|facebook|line|band/i.test(userAgent);
+
+            // 1. 안드로이드: 인앱이든 아니든 일단 크롬 강제 실행 시도
+            if (userAgent.includes("android")) {
+                const chromeIntent = `intent://${targetUrl}#Intent;scheme=https;package=com.android.chrome;end`;
+                location.href = chromeIntent;
+                // 만약 크롬이 없어서 실행이 안 될 경우를 대비해 일정 시간 후 일반 이동 시도 (선택사항)
+                setTimeout(function() { location.href = fullUrl; }, 1500); 
+            } 
+            
+            // 2. iOS (아이폰/아이패드)
+            else if (userAgent.includes("iphone") || userAgent.includes("ipad") || userAgent.includes("ipod")) {
+                
+                if (isInApp) {
+                    // 2-1. iOS면서 인앱 브라우저인 경우 -> 가이드 화면 노출
+                    document.getElementById("loading").style.display = "none";
+                    document.getElementById("guide-overlay").style.display = "flex";
+                } else {
+                    // 2-2. iOS면서 사파리/크롬 등 일반 브라우저인 경우 -> 바로 이동
+                    location.href = fullUrl;
+                }
+            } 
+            
+            // 3. PC 등 기타 환경 -> 바로 이동
+            else {
+                location.href = fullUrl;
+            }
+        })();
+    </script>
+</body>
+</html>
