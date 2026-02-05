@@ -7,7 +7,6 @@
     <style>
         body { margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
         
-        /* 로딩 중 화면 */
         #loading {
             display: flex;
             justify-content: center;
@@ -27,108 +26,109 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 인앱 브라우저 탈출 가이드 (기본적으로 숨김) */
-        #guide-overlay {
-            display: none; /* JS로 제어 */
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+        /* iOS 가이드 화면 */
+        #ios-guide {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0, 0, 0, 0.85);
-            z-index: 9999;
-            color: white;
-            text-align: center;
-            flex-direction: column;
-            justify-content: flex-start;
-            padding-top: 50px;
+            z-index: 9999; color: white;
+            text-align: center; flex-direction: column; padding-top: 50px;
         }
-        .guide-arrow {
-            position: absolute;
-            top: 10px;
-            right: 20px;
-            font-size: 50px;
-            animation: bounce 1s infinite;
-        }
-        .guide-text {
-            margin-top: 80px;
-            font-size: 18px;
-            line-height: 1.6;
-            padding: 0 20px;
-        }
-        .guide-icon {
-            display: inline-block;
-            background: #fff;
-            color: #333;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-            margin: 0 4px;
-        }
-        .btn-manual {
-            margin-top: 30px;
-            padding: 12px 24px;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 25px;
-            font-size: 16px;
-            cursor: pointer;
-            text-decoration: none;
-        }
+        .guide-arrow { position: absolute; top: 10px; right: 20px; font-size: 50px; animation: bounce 1s infinite; }
+        .guide-text { margin-top: 80px; font-size: 18px; line-height: 1.6; padding: 0 20px; }
+        .guide-icon { background: #fff; color: #333; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin: 0 4px; }
 
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+        /* 안드로이드 수동 버튼 화면 */
+        #android-manual {
+            display: none; /* JS로 제어 */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #fff;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
         }
+        .android-btn {
+            background-color: #4285F4; /* 크롬 컬러 */
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 15px 30px;
+            border-radius: 30px;
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            margin-top: 20px;
+        }
+        .android-msg { font-size: 16px; color: #333; margin-bottom: 20px; padding: 0 20px; }
+
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
     </style>
 </head>
 <body>
 
     <div id="loading">
         <div class="spinner"></div>
-        <p>사이트로 연결 중입니다...</p>
+        <p>연결 중입니다...</p>
     </div>
 
-    <div id="guide-overlay">
+    <div id="ios-guide">
         <div class="guide-arrow">👆</div>
         <div class="guide-text">
-            이 페이지는 외부 브라우저에서<br>정상 작동합니다.<br><br>
+            접속이 원활하지 않습니다.<br><br>
             화면 우측 상단의 <span class="guide-icon">···</span> 또는 <span class="guide-icon">공유</span> 버튼을 눌러<br>
             <strong>[Safari로 열기]</strong>를 선택해주세요.
         </div>
-        <br>
-        <a href="https://xconnect-e36e7.web.app/" class="btn-manual" target="_blank">브라우저로 이동하기</a>
+    </div>
+
+    <div id="android-manual">
+        <p class="android-msg">보안 정책으로 인해 자동 연결이 차단되었습니다.<br>아래 버튼을 눌러주세요.</p>
+        <a id="chrome-btn" href="#" class="android-btn">Chrome으로 열기</a>
     </div>
 
     <script>
         (function() {
             const userAgent = navigator.userAgent.toLowerCase();
-            const targetUrl = "xconnect-e36e7.web.app/";
+            const targetUrl = "xconnect-e36e7.web.app/"; 
             const fullUrl = "https://" + targetUrl;
+            
+            // 크롬 인텐트 주소 (패키지 강제 지정)
+            const chromeIntent = `intent://${targetUrl}#Intent;scheme=https;package=com.android.chrome;end`;
 
-            // 인앱 브라우저 확인용 키워드 (카톡, 네이버, 인스타, 페이스북, 라인 등)
+            // 인앱 브라우저 체크
             const isInApp = /kakaotalk|naver|instagram|facebook|line|band/i.test(userAgent);
 
-            // 1. 안드로이드: 인앱이든 아니든 일단 크롬 강제 실행 시도
+            // 1. 안드로이드
             if (userAgent.includes("android")) {
-                const chromeIntent = `intent://${targetUrl}#Intent;scheme=https;package=com.android.chrome;end`;
-                location.href = chromeIntent;
-                // 만약 크롬이 없어서 실행이 안 될 경우를 대비해 일정 시간 후 일반 이동 시도 (선택사항)
-                setTimeout(function() { location.href = fullUrl; }, 1500); 
+                if (isInApp) {
+                    // 네이버/카톡 등 인앱이면: 자동 실행 시도 + 버튼 띄우기
+                    // (자동 실행은 막힐 확률 높음)
+                    document.getElementById("chrome-btn").href = chromeIntent;
+                    document.getElementById("loading").style.display = "none";
+                    document.getElementById("android-manual").style.display = "flex";
+                    
+                    // 혹시 모르니 자동 실행도 한 번 찔러봄
+                    location.href = chromeIntent;
+                } else {
+                    // 일반 브라우저(삼성인터넷 등)면 바로 크롬 호출
+                    location.href = chromeIntent;
+                }
             } 
             
             // 2. iOS (아이폰/아이패드)
             else if (userAgent.includes("iphone") || userAgent.includes("ipad") || userAgent.includes("ipod")) {
-                
                 if (isInApp) {
-                    // 2-1. iOS면서 인앱 브라우저인 경우 -> 가이드 화면 노출
+                    // 카톡/네이버 앱 등에서는 가이드 화면 노출
                     document.getElementById("loading").style.display = "none";
-                    document.getElementById("guide-overlay").style.display = "flex";
+                    document.getElementById("ios-guide").style.display = "flex";
                 } else {
-                    // 2-2. iOS면서 사파리/크롬 등 일반 브라우저인 경우 -> 바로 이동
+                    // 사파리나 크롬 앱 자체에서는 그냥 이동
+                    // (사용자가 크롬을 기본으로 설정했으면 크롬으로 뜨는 건 어쩔 수 없음)
                     location.href = fullUrl;
                 }
             } 
             
-            // 3. PC 등 기타 환경 -> 바로 이동
+            // 3. PC 등
             else {
                 location.href = fullUrl;
             }
